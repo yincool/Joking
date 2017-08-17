@@ -22,7 +22,7 @@ class Users extends Model
 
     //登陆校验
     public function checkLogin($param){
-        $res = DB::table($this->table)->select('')->where(['phone'=>$param['usernumber'],'password'=>$param['password']])->orWhere(['email'=>$param['usernumber']])->get();
+        $res = DB::table($this->table)->select('username','phone','password')->where(['phone'=>$param['usernumber'],'password'=>$param['password']])->get();
         return $res;
     }
 }

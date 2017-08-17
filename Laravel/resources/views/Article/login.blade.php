@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{asset('css/iconfont.css')}}">
     <script src="{{asset('js/jquery3.1.1.min.js')}}"></script>
     <script src="{{asset('js/login.js')}}"></script>
+    <script src="{{asset('js/msg.js')}}"></script>
     <link href="https://cdn2.jianshu.io/assets/favicons/favicon-783beb88ed621ceab614de960376ac0c.ico" rel="icon">
     {{--<script charset="UTF-8" src="./登录 - 简书_files/get.php"></script>--}}
     {{--<link rel="stylesheet" href="./登录 - 简书_files/style_https.3.2.0.css">--}}
@@ -36,7 +37,7 @@
             <form id="new_session" accept-charset="UTF-8" method="post">
                 <!-- 正常登录登录名输入框 -->
                 <div class="input-prepend restyle js-normal">
-                    <input placeholder="手机号或邮箱" type="text" name="usernumber">
+                    <input placeholder="手机号或邮箱" type="text" name="usernumber" maxlength="11">
                     <i class="iconfont">&#xe607;</i>
                 </div>
                 <!-- 海外登录登录名输入框 -->
@@ -59,7 +60,7 @@
             </form>
         </div>
 
-        <div class="tooltip tooltip-error tooltip-error-usernumber fade right in" role="tooltip" id="tooltip487731" style="top: 285px; left: 850px; display: none;">
+        <div class="tooltip tooltip-error tooltip-error-usernumber fade right in" role="tooltip" id="tooltip487731" style="top: 285px; left: 930px; display: none;">
             <div class="tooltip-arrow tooltip-arrow-border" style="top: 50%;"></div>
             <div class="tooltip-arrow tooltip-arrow-bg" style="top: 50%;"></div>
             <div class="tooltip-inner">
@@ -68,7 +69,7 @@
             </div>
         </div>
 
-        <div class="tooltip tooltip-error tooltip-error-password fade right in" role="tooltip" id="tooltip487731" style="top: 335px; left: 850px; display: none;">
+        <div class="tooltip tooltip-error tooltip-error-password fade right in" role="tooltip" id="tooltip487731" style="top: 335px; left: 930px; display: none;">
             <div class="tooltip-arrow tooltip-arrow-border" style="top: 50%;"></div>
             <div class="tooltip-arrow tooltip-arrow-bg" style="top: 50%;"></div>
             <div class="tooltip-inner">

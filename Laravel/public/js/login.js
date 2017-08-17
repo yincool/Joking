@@ -1,4 +1,6 @@
 $(document).ready(function () {
+    remeber_me = 1;
+
     $('input[name="usernumber"]').blur(function () {
         var usernumber = $('input[name="usernumber"]').val();
         if(usernumber.length <= 0){
@@ -26,13 +28,16 @@ $(document).ready(function () {
                     url:'/checkLogin',
                     type:'post',
                     headers:{'X-CSRF-TOKEN':token},
-                    data:{usernumber:usernumber,password:password},
+                    data:{usernumber:usernumber,password:password,remeber_me:remeber_me},
                     dataType:'json',
                     success:function (res) {
                         if(res.success){
-                            alert(res.data);
+                            $.msg('µÇÂ¼³É¹¦');
+                            setTimeout(function(){
+                                window.location = '/';
+                            },2000);
                         }else {
-                            alert(2);
+                            $.msg(res.errorMsg);
                         }
                     }
                 });

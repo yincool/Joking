@@ -1,7 +1,7 @@
 var second = 3;
 
 $().ready(function(){
-    var html = '<div class="tooltip tooltip-error tooltip-error-top fade right in" role="tooltip" id="tooltip487731" style="top: 130px; left: 650px; display: block;">'+
+    var html = '<div class="tooltip tooltip-error tooltip-error-top fade right in" role="tooltip" id="tooltip487731" style="top: 150px; left: 700px; display: block;">'+
         '<div class="tooltip-inner">'+
         '<span></span>'+
         '</div>'+

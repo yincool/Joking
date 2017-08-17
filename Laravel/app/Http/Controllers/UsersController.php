@@ -19,15 +19,20 @@ class UsersController extends Controller
     //登陆校验
     public function checkLogin(Request $request){
         $param['usernumber'] = $request->input('usernumber');
-//        echo $param['usernumber'];
         if(isset($param['usernumber'])){
             $param['password'] = md5($request->input('password').'@#');
-//            echo $param['password'];exit;
             if(isset($param['password'])){
                 $users = new Users();
                 $res = $users->checkLogin($param);
                 if($res->isNotEmpty()){
-                    _successFormat('登陆成功');
+                    if($request->input('remeber_me')){
+                        Cookie::queue('username',$param['usernumber'],604800);
+                        Cookie::queue('password',$param['password'],604800);
+                    }
+                    $request->session()->put('username',$param['usernumber']);
+                    $request->session()->put('password',$param['password']);
+                    $request->session()->save();
+                    _successFormat();
                 }else{
                     _errorFormat(2004);
                 }
