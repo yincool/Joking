@@ -12,9 +12,9 @@ class ArticleController extends Controller
 {
     //首页显示
     public function index(Request $request){
-        if($request->session()->has('username')){
-            $username = $request->session()->get('username');
-            return view('Article.index',compact('username'));
+        if($request->session()->has('usernumber')){
+            $usernumber = $request->session()->get('usernumber');
+            return view('Article.index',compact('usernumber'));
         }else{
             return view('Article.index');
         }

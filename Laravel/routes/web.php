@@ -39,5 +39,5 @@ Route::get('/exitLogin',['uses'=>'UsersController@exitLogin']);
 Route::get('/test',['uses'=>'UsersController@test']);
 
 //文章录入页面
-Route::get('/write',['uses'=>'ArticleController@writeArticle']);
+Route::get('/write',['uses'=>'ArticleController@writeArticle'])->middleware('checkLogin');
 

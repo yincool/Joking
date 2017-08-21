@@ -17,6 +17,7 @@ class UsersController extends Controller
     }
 
     //登陆校验
+    //设置cookie是不能exit,否则失效
     public function checkLogin(Request $request){
         $param['usernumber'] = $request->input('usernumber');
         if(isset($param['usernumber'])){
@@ -26,19 +27,20 @@ class UsersController extends Controller
                 $res = $users->checkLogin($param);
                 if($res->isNotEmpty()){
                     if($request->input('remeber_me')){
-                        Cookie::queue('username',$param['usernumber'],604800);
-                        Cookie::queue('password',$param['password'],604800);
+                        Cookie::queue('usernumber',$param['usernumber'],10080);
+                        Cookie::queue('password',$param['password'],10080);
                     }
-                    $request->session()->put('username',$param['usernumber']);
+                    $request->session()->put('usernumber',$param['usernumber']);
                     $request->session()->put('password',$param['password']);
                     $request->session()->save();
-                    _successFormat();
+                    return response()->json(array('success'=>true,'errorCode'=>0,'data'=>''));
                 }else{
                     _errorFormat(2004);
                 }
             }
         }
     }
+
 
     //注册页面
     public function register(){
@@ -63,7 +65,7 @@ class UsersController extends Controller
                             $users = new Users();
                             $res = $users->addUser($param);
                             if($res){
-                                $request->session()->put('username',$param['username']);
+                                $request->session()->put('usernumber',$param['phone']);
                                 $request->session()->put('password',$param['password']);
                                 //不加此句将无法存储session
                                 $request->session()->save();

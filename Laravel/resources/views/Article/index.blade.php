@@ -23,7 +23,7 @@
         <a class="btn write-btn" href="#">
             <i class="iconfont">&#xe645;</i>写文章
         </a>
-        @if(isset($username))
+        @if(isset($usernumber))
             <div class="user">
                 <div data-hover="dropdown">
                     <a class="avatar" href="/u/060bb14f5d3d"><img src="//upload.jianshu.io/users/upload_avatars/7192090/e987cf33-84e3-4ba5-b752-09b0d0bf420c?imageMogr2/auto-orient/strip|imageView2/1/w/120/h/120" alt="120"></a>
@@ -81,7 +81,7 @@
                 <span class="icon-bar"></span>
             </button>
         </div>
-        @if(isset($username))
+        @if(isset($usernumber))
             <div class="collapse navbar-collapse" id="menu">
                 <ul class="nav navbar-nav">
                     <li class="">
