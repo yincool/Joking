@@ -20,9 +20,15 @@ class Users extends Model
         return $res;
     }
 
-    //登陆校验
-    public function checkLogin($param){
+    //手机号登陆
+    public function phoneLogin($param){
         $res = DB::table($this->table)->select('username','phone','password')->where(['phone'=>$param['usernumber'],'password'=>$param['password']])->get();
+        return $res;
+    }
+
+    //邮箱登陆
+    public function emailLogin($param){
+        $res = DB::table($this->table)->select('username','phone','password')->where(['email'=>$param['usernumber'],'password'=>$param['password']])->get();
         return $res;
     }
 }

@@ -8,6 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cookie;
 use Gregwar\Captcha\CaptchaBuilder;
 use Illuminate\Support\Facades\Session;
+use Carbon\Carbon;
 
 class UsersController extends Controller
 {
@@ -24,7 +25,8 @@ class UsersController extends Controller
             $param['password'] = md5($request->input('password').'@#');
             if(isset($param['password'])){
                 $users = new Users();
-                $res = $users->checkLogin($param);
+                // 验证手机号登录方式
+                $res = $users->phoneLogin($param);
                 if($res->isNotEmpty()){
                     if($request->input('remeber_me')){
                         Cookie::queue('usernumber',$param['usernumber'],10080);
@@ -34,9 +36,21 @@ class UsersController extends Controller
                     $request->session()->put('password',$param['password']);
                     $request->session()->save();
                     return response()->json(array('success'=>true,'errorCode'=>0,'data'=>''));
-                }else{
-                    _errorFormat(2004);
                 }
+                //验证邮箱登录方式
+                $res = $users->emailLogin($param);
+                if($res->isNotEmpty()){
+                    if($request->input('remeber_me')){
+                        Cookie::queue('usernumber',$param['usernumber'],10080);
+                        Cookie::queue('password',$param['password'],10080);
+                    }
+                    $request->session()->put('usernumber',$param['usernumber']);
+                    $request->session()->put('password',$param['password']);
+                    $request->session()->save();
+                    return response()->json(array('success'=>true,'errorCode'=>0,'data'=>''));
+                }
+
+                _errorFormat(2004);
             }
         }
     }
