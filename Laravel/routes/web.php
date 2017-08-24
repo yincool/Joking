@@ -38,6 +38,8 @@ Route::get('/exitLogin',['uses'=>'UsersController@exitLogin']);
 
 Route::get('/test',['uses'=>'UsersController@test']);
 
+Route::post('/uploadImage',['uses'=>'UsersController@uploadImage']);
+
 //文章录入页面
 Route::get('/write',['uses'=>'ArticleController@writeArticle'])->middleware('checkLogin');
 

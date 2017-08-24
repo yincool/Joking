@@ -144,6 +144,21 @@ class UsersController extends Controller
     }
 
     public function test(Request $request){
-        $request->session()->put('username',222);
+//        Cookie::queue('test', 'Hello, Laramist', 10);
+//        Cookie::queue('test2', 'Hello, Laramist', 10);
+//        Cookie::queue('test3', 'Hello, Laramist', 10);
+//        Cookie::queue('test4', 'Hello, Laramist', 10);
+        return view('test');
+    }
+
+    public function uploadImage(Request $request){
+        $filePath = $request->input('image');
+        $fileName = $request->input('name');
+        $res = $this->upload($filePath,$fileName);
+        if($res){
+            _successFormat($res);
+        }else{
+            _errorFormat(1001);
+        }
     }
 }
