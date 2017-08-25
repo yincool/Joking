@@ -15,21 +15,23 @@ class Controller extends BaseController
 
     //七牛上传
     public function upload($filePath,$fileName,$part = ''){
-//        require_once '';
-        $accessKey = 'Wt0gW4tXV6YzNEvSVF7gH4pkKK4VS2clrr1zzsZq';
-        $secretKey = 'J80IASO_VCA3CrTVL7434PPHeqo8gMFtGuSh39zg';
-        // 初始化签权对象。
+        $accessKey = config('qiniu.accessKey');
+        $secretKey = config('qiniu.secretKey');
         $auth = new Auth($accessKey, $secretKey);
-        $bucket = "opskzr9p0.bkt.clouddn.com";
+        $bucket = config('qiniu.bucket');
         $upToken = $auth->uploadToken($bucket);
-        // 初始化 UploadManager 对象并进行文件的上传。
         $uploadMgr = new UploadManager();
-        $key = 'http://opgmvuzyu.bkt.clouddn.com/'.$part.$fileName;
-        list($ret, $err) = $uploadMgr->putFile($upToken, $key, $filePath);
+        $key = $part.$fileName;
+        list($ret, $err) = $uploadMgr->putFile($upToken,$key,$filePath);
         if ($err !== null) {
             echo json_encode($err);
         } else {
             echo json_encode($ret);
         }
+    }
+
+    public function base64url_encode($data)
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 }

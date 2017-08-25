@@ -18,7 +18,8 @@
     },
     "autoload": {
         "classmap": [
-            "database"
+            "database",
+            "app/Tools/Qiniu"
         ],
         "files":[
             "app/Common/function.php"
