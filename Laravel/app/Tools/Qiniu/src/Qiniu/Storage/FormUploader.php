@@ -13,10 +13,10 @@ final class FormUploader
      * @param $upToken    上传凭证
      * @param $key        上传文件名
      * @param $data       上传二进制流
-     * @param $config     上传配置
      * @param $params     自定义变量，规格参考
      *                    http://developer.qiniu.com/docs/v6/api/overview/up/response/vars.html#xvar
      * @param $mime       上传数据的mimeType
+     * @param $checkCrc   是否校验crc32
      *
      * @return array    包含已上传文件的信息，类似：
      *                                              [
@@ -30,9 +30,9 @@ final class FormUploader
         $data,
         $config,
         $params,
-        $mime
+        $mime,
+        $checkCrc
     ) {
-
         $fields = array('token' => $upToken);
         if ($key === null) {
             $fname = 'filename';
@@ -40,22 +40,19 @@ final class FormUploader
             $fname = $key;
             $fields['key'] = $key;
         }
-
-        //enable crc32 check by default
-        $fields['crc32'] = \Qiniu\crc32_data($data);
-
+        if ($checkCrc) {
+            $fields['crc32'] = \Qiniu\crc32_data($data);
+        }
         if ($params) {
             foreach ($params as $k => $v) {
                 $fields[$k] = $v;
             }
         }
 
-        list($accessKey, $bucket, $err) = \Qiniu\explodeUpToken($upToken);
+        list($upHost, $err) = $config->zone->getUpHostByToken($upToken);
         if ($err != null) {
             return array(null, $err);
         }
-
-        $upHost = $config->getUpHost($accessKey, $bucket);
 
         $response = Client::multipartPost($upHost, $fields, 'file', $fname, $data, $mime);
         if (!$response->ok()) {
@@ -70,10 +67,10 @@ final class FormUploader
      * @param $upToken    上传凭证
      * @param $key        上传文件名
      * @param $filePath   上传文件的路径
-     * @param $config     上传配置
      * @param $params     自定义变量，规格参考
      *                    http://developer.qiniu.com/docs/v6/api/overview/up/response/vars.html#xvar
      * @param $mime       上传数据的mimeType
+     * @param $checkCrc   是否校验crc32
      *
      * @return array    包含已上传文件的信息，类似：
      *                                              [
@@ -87,33 +84,31 @@ final class FormUploader
         $filePath,
         $config,
         $params,
-        $mime
+        $mime,
+        $checkCrc
     ) {
-
 
         $fields = array('token' => $upToken, 'file' => self::createFile($filePath, $mime));
         if ($key !== null) {
             $fields['key'] = $key;
         }
-
-        $fields['crc32'] = \Qiniu\crc32_file($filePath);
-
+        if ($checkCrc) {
+            $fields['crc32'] = \Qiniu\crc32_file($filePath);
+        }
         if ($params) {
             foreach ($params as $k => $v) {
                 $fields[$k] = $v;
             }
         }
         $fields['key'] = $key;
-        $headers = array('Content-Type' => 'multipart/form-data');
+        $headers =array('Content-Type' => 'multipart/form-data');
 
-        list($accessKey, $bucket, $err) = \Qiniu\explodeUpToken($upToken);
+        list($upHost, $err) = $config->zone->getUpHostByToken($upToken);
         if ($err != null) {
             return array(null, $err);
         }
-
-        $upHost = $config->getUpHost($accessKey, $bucket);
-
-        $response = Client::post($upHost, $fields, $headers);
+        
+        $response = client::post($upHost, $fields, $headers);
         if (!$response->ok()) {
             return array(null, new Error($upHost, $response));
         }

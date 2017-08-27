@@ -15,8 +15,9 @@ class Controller extends BaseController
 
     //ÆßÅ£ÉÏ´«
     public function upload($filePath,$fileName,$part = ''){
-        $accessKey = config('qiniu.accessKey');
-        $secretKey = config('qiniu.secretKey');
+        require_once app_path('Tools/Qiniu/autoload.php');
+        $accessKey = config('qiniu.AccessKey');
+        $secretKey = config('qiniu.SecretKey');
         $auth = new Auth($accessKey, $secretKey);
         $bucket = config('qiniu.bucket');
         $upToken = $auth->uploadToken($bucket);
@@ -24,14 +25,13 @@ class Controller extends BaseController
         $key = $part.$fileName;
         list($ret, $err) = $uploadMgr->putFile($upToken,$key,$filePath);
         if ($err !== null) {
-            echo json_encode($err);
+            return false;
         } else {
-            echo json_encode($ret);
+            return $ret;
         }
     }
 
-    public function base64url_encode($data)
-    {
+    public function base64url_encode($data){
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 }

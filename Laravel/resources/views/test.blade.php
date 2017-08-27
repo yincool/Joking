@@ -5,13 +5,14 @@
     <title>Title</title>
     <meta name="_token" content="{{csrf_token()}}">
     <link href="{{asset('editor.md/css/editormd.min.css')}}" rel="stylesheet">
+    <script src="{{asset('js/jquery3.1.1.min.js')}}"></script>
 </head>
 <body>
     <div id="editormd">
-        <textarea style="display:none;" name="md">### Hello Editor.md !</textarea>
+        <textarea style="display:none;" name="md"></textarea>
     </div>
 </body>
-<script src="{{asset('js/jquery3.1.1.min.js')}}"></script>
+
 <script src="{{asset('editor.md/editormd.js')}}"></script>
 <script src="{{asset('editor.md/lib/lrz.bundle.js')}}"></script>
 <script type="text/javascript">
@@ -24,7 +25,7 @@
             //启动本地图片上传功能
             imageUpload:true,
             imageFormats   : ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
-            imageUploadURL : "",
+            imageUploadURL : "/localUpImage",
             saveHTMLToTextarea : true,
             emoji: true,//emoji表情，默认关闭
             taskList: true,
@@ -33,7 +34,8 @@
             flowChart: true,//开启流程图支持，默认关闭
             sequenceDiagram: true,//开启时序/序列图支持，默认关闭,
         });
-
+        
+        //粘贴事件
         function paste(event) {
             var clipboardData = event.clipboardData;
             var items, item, types;
@@ -64,18 +66,17 @@
                                 url: "/uploadImage",
                                 type: 'post',
                                 headers:{'X-CSRF-TOKEN':token},
-                                data: {"filePath": res.base64, "name": new Date().getTime() + ".png"},
-//                                contentType: 'application/x-www-form-urlencoded;charest=UTF-8',
+                                data: {"filePath": res.base64, "fileName": new Date().getTime() + ".png"},
+                                contentType: 'application/x-www-form-urlencoded;charest=UTF-8',
                                 dataType:'json',
-                                success: function (data) {
+                                success: function (res) {
                                     var imageName;
-                                    try {
-                                        imageName = JSON.parse(data).key;
-                                    } catch (e) {
-                                        alert(e.toString);
-                                    }
-
-                                    var qiniuUrl = '![](http://opgmvuzyu.bkt.clouddn.com/' + imageName + ')';
+//                                    try {
+//                                        imageName = JSON.parse(data).key;
+//                                    } catch (e) {
+//                                        alert(e.toString);
+//                                    }
+                                    var qiniuUrl = '![](http://opskzr9p0.bkt.clouddn.com/' + res.data.key + ')';
 
                                     editor.insertValue(qiniuUrl);
                                 }
@@ -87,41 +88,7 @@
         }
         document.addEventListener('paste', function (event) {
             paste(event);
-        })
-
-
-        /**
-         * 咱贴上传图片
-         */
-//        $("#editormd").on('paste', function (ev) {
-//            var data = ev.clipboardData;
-//            var items = (event.clipboardData || event.originalEvent.clipboardData).items;
-//            for (var index in items) {
-//                var item = items[index];
-//                if (item.kind === 'file') {
-//                    var blob = item.getAsFile();
-//                    var reader = new FileReader();
-//                    reader.onload = function (event) {
-//                        var base64 = event.target.result;
-//                        alert(1);
-//                        $.ajax({
-//                            url:'/uploadImage',
-//                            data:{base64:base64},
-//                            type:'post',
-//                            dataType:'json',
-//                            headers:{'X-CSRF-TOKEN':token},
-//                            success:function (res) {
-//                                layer.msg(res.msg);
-//                                if(res.success){
-//                                    editor.insertValue("\n![" + res.data.title + "](" + res.data.path + ")");
-//                                }
-//                            }
-//                        });
-//                    }; // data url!
-//                    var url = reader.readAsDataURL(blob);
-//                }
-//            }
-//        });
+        });
     });
 </script>
 </html>

@@ -1,6 +1,7 @@
 <?php
 namespace Qiniu;
 
+use Qiniu;
 use Qiniu\Zone;
 
 final class Auth
@@ -27,8 +28,8 @@ final class Auth
 
     public function signWithData($data)
     {
-        $encodedData = \Qiniu\base64_urlSafeEncode($data);
-        return $this->sign($encodedData) . ':' . $encodedData;
+        $data = \Qiniu\base64_urlSafeEncode($data);
+        return $this->sign($data) . ':' . $data;
     }
 
     public function signRequest($urlString, $body, $contentType = null)
@@ -76,18 +77,28 @@ final class Auth
         $key = null,
         $expires = 3600,
         $policy = null,
-        $strictPolicy = true
+        $strictPolicy = true,
+        Zone $zone = null
     ) {
         $deadline = time() + $expires;
         $scope = $bucket;
         if ($key !== null) {
             $scope .= ':' . $key;
         }
-
+        $args = array();
         $args = self::copyPolicy($args, $policy, $strictPolicy);
         $args['scope'] = $scope;
         $args['deadline'] = $deadline;
 
+        if ($zone === null) {
+            $zone = new Zone();
+        }
+
+        list($upHosts, $err) = $zone->getUpHosts($this->accessKey, $bucket);
+        if ($err === null) {
+            $args['upHosts'] = $upHosts;
+        }
+        
         $b = json_encode($args);
         return $this->signWithData($b);
     }
@@ -118,10 +129,14 @@ final class Auth
         'persistentOps',
         'persistentNotifyUrl',
         'persistentPipeline',
-
+        
         'deleteAfterDays',
-        'fileType',
-        'isPrefixalScope',
+
+        'upHosts',
+    );
+
+    private static $deprecatedPolicyFields = array(
+        'asyncOps',
     );
 
     private static function copyPolicy(&$policy, $originPolicy, $strictPolicy)
@@ -130,7 +145,10 @@ final class Auth
             return array();
         }
         foreach ($originPolicy as $key => $value) {
-            if (!$strictPolicy || in_array((string)$key, self::$policyFields, true)) {
+            if (in_array((string) $key, self::$deprecatedPolicyFields, true)) {
+                throw new \InvalidArgumentException("{$key} has deprecated");
+            }
+            if (!$strictPolicy || in_array((string) $key, self::$policyFields, true)) {
                 $policy[$key] = $value;
             }
         }

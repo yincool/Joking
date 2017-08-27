@@ -6,146 +6,180 @@ use Qiniu\Http\Error;
 
 final class Zone
 {
+    public $ioHost;            // 七牛源站Host
+    public $upHost;
+    public $upHostBackup;
 
-    //源站上传域名
-    public $srcUpHosts;
-    //CDN加速上传域名
-    public $cdnUpHosts;
-    //资源管理域名
-    public $rsHost;
-    //资源列举域名
-    public $rsfHost;
-    //资源处理域名
-    public $apiHost;
-    //IOVIP域名
-    public $iovipHost;
+    //array(
+    //    <scheme>:<ak>:<bucket> ==>
+    //        array('deadline' => 'xxx', 'upHosts' => array(), 'ioHost' => 'xxx.com')
+    //)
+    public $hostCache;
+    public $scheme = 'http';
 
-    //构造一个Zone对象
-    public function __construct(
-        $srcUpHosts = array(),
-        $cdnUpHosts = array(),
-        $rsHost = "rs.qiniu.com",
-        $rsfHost = "rsf.qiniu.com",
-        $apiHost = "api.qiniu.com",
-        $iovipHost = null
-    ) {
-
-        $this->srcUpHosts = $srcUpHosts;
-        $this->cdnUpHosts = $cdnUpHosts;
-        $this->rsHost = $rsHost;
-        $this->rsfHost = $rsfHost;
-        $this->apiHost = $apiHost;
-        $this->iovipHost = $iovipHost;
-    }
-
-    //华东机房
-    public static function zone0()
+    public function __construct($scheme = null)
     {
-        $Zone_z0 = new Zone(
-            array("up.qiniup.com", 'up-nb.qiniup.com', 'up-xs.qiniup.com'),
-            array('upload.qiniup.com', 'upload-nb.qiniup.com', 'upload-xs.qiniup.com'),
-            'rs.qiniu.com',
-            'rsf.qiniu.com',
-            'api.qiniu.com',
-            'iovip.qbox.me'
-        );
-        return $Zone_z0;
+        $this->hostCache = array();
+        if ($scheme != null) {
+            $this->scheme = $scheme;
+        }
     }
 
-    //华北机房
-    public static function zone1()
+    public function getUpHostByToken($uptoken)
     {
-        $Zone_z1 = new Zone(
-            array('up-z1.qiniup.com'),
-            array('upload-z1.qiniup.com'),
-            "rs-z1.qiniu.com",
-            "rsf-z1.qiniu.com",
-            "api-z1.qiniu.com",
-            "iovip-z1.qbox.me"
-        );
-
-        return $Zone_z1;
+        list($ak, $bucket) = $this->unmarshalUpToken($uptoken);
+        list($upHosts, $err) = $this->getUpHosts($ak, $bucket);
+        return array($upHosts[0], $err);
     }
 
-    //华南机房
-    public static function zone2()
+    public function getBackupUpHostByToken($uptoken)
     {
-        $Zone_z2 = new Zone(
-            array('up-z2.qiniup.com', 'up-gz.qiniup.com', 'up-fs.qiniup.com'),
-            array('upload-z2.qiniup.com', 'upload-gz.qiniup.com', 'upload-fs.qiniup.com'),
-            "rs-z2.qiniu.com",
-            "rsf-z2.qiniu.com",
-            "api-z2.qiniu.com",
-            "iovip-z2.qbox.me"
-        );
-        return $Zone_z2;
+        list($ak, $bucket) = $this->unmarshalUpToken($uptoken);
+        list($upHosts, $err) = $this->getUpHosts($ak, $bucket);
+
+        $upHost = isset($upHosts[1]) ? $upHosts[1] : $upHosts[0];
+        return array($upHost, $err);
     }
 
-    //北美机房
-    public static function zoneNa0()
+    public function getIoHost($ak, $bucket)
     {
-        //北美机房
-        $Zone_na0 = new Zone(
-            array('up-na0.qiniup.com'),
-            array('upload-na0.qiniup.com'),
-            "rs-na0.qiniu.com",
-            "rsf-na0.qiniu.com",
-            "api-na0.qiniu.com",
-            "iovip-na0.qbox.me"
-        );
-        return $Zone_na0;
+        list($bucketHosts,) = $this->getBucketHosts($ak, $bucket);
+        $ioHosts = $bucketHosts['ioHost'];
+        return $ioHosts[0];
     }
 
-    /*
-     * GET /v2/query?ak=<ak>&&bucket=<bucket>
+    public function getUpHosts($ak, $bucket)
+    {
+        list($bucketHosts, $err) = $this->getBucketHosts($ak, $bucket);
+        if ($err !== null) {
+            return array(null, $err);
+        }
+
+        $upHosts = $bucketHosts['upHosts'];
+        return array($upHosts, null);
+    }
+
+    private function unmarshalUpToken($uptoken)
+    {
+        $token = explode(':', $uptoken);
+        if (count($token) !== 3) {
+            throw new \Exception("Invalid Uptoken", 1);
+        }
+
+        $ak = $token[0];
+        $policy = base64_urlSafeDecode($token[2]);
+        $policy = json_decode($policy, true);
+
+        $scope = $policy['scope'];
+        $bucket = $scope;
+
+        if (strpos($scope, ':')) {
+            $scopes = explode(':', $scope);
+            $bucket = $scopes[0];
+        }
+
+        return array($ak, $bucket);
+    }
+
+    public function getBucketHosts($ak, $bucket)
+    {
+        $key = $this->scheme . ":$ak:$bucket";
+
+        $bucketHosts = $this->getBucketHostsFromCache($key);
+        if (count($bucketHosts) > 0) {
+            return array($bucketHosts, null);
+        }
+
+        list($hosts, $err) = $this->bucketHosts($ak, $bucket);
+        if ($err !== null) {
+            return array(null , $err);
+        }
+
+        $schemeHosts = $hosts[$this->scheme];
+        $bucketHosts = array(
+            'upHosts' => $schemeHosts['up'],
+            'ioHost' => $schemeHosts['io'],
+            'deadline' => time() + $hosts['ttl']
+        );
+
+        $this->setBucketHostsToCache($key, $bucketHosts);
+        return array($bucketHosts, null);
+    }
+
+    private function getBucketHostsFromCache($key)
+    {
+        $ret = array();
+        if (count($this->hostCache) === 0) {
+            $this->hostCacheFromFile();
+        }
+
+        if (!array_key_exists($key, $this->hostCache)) {
+            return $ret;
+        }
+
+        if ($this->hostCache[$key]['deadline'] > time()) {
+            $ret = $this->hostCache[$key];
+        }
+
+        return $ret;
+    }
+
+    private function setBucketHostsToCache($key, $val)
+    {
+        $this->hostCache[$key] = $val;
+        $this->hostCacheToFile();
+        return;
+    }
+
+    private function hostCacheFromFile()
+    {
+
+        $path = $this->hostCacheFilePath();
+        if (!file_exists($path)) {
+            return;
+        }
+
+        $bucketHosts = file_get_contents($path);
+        $this->hostCache = json_decode($bucketHosts, true);
+        return;
+    }
+
+    private function hostCacheToFile()
+    {
+        $path = $this->hostCacheFilePath();
+        file_put_contents($path, json_encode($this->hostCache), LOCK_EX);
+        return;
+    }
+
+    private function hostCacheFilePath()
+    {
+        return sys_get_temp_dir() . '/.qiniu_phpsdk_hostscache.json';
+    }
+
+    /*  请求包：
+     *   GET /v1/query?ak=<ak>&&bucket=<bucket>
+     *  返回包：
+     *  
+     *  200 OK {
+     *    "ttl": <ttl>,              // 有效时间
+     *    "http": {
+     *      "up": [],
+     *      "io": [],                // 当bucket为global时，我们不需要iohost, io缺省
+     *    },
+     *    "https": {
+     *      "up": [],
+     *      "io": [],                // 当bucket为global时，我们不需要iohost, io缺省
+     *    }
+     *  }
      **/
-    public static function queryZone($ak, $bucket)
+    private function bucketHosts($ak, $bucket)
     {
-        $zone = new Zone();
-        $url = Config::UC_HOST . '/v2/query' . "?ak=$ak&bucket=$bucket";
+        $url = Config::UC_HOST . '/v1/query' . "?ak=$ak&bucket=$bucket";
         $ret = Client::Get($url);
         if (!$ret->ok()) {
             return array(null, new Error($url, $ret));
         }
         $r = ($ret->body === null) ? array() : $ret->json();
-        //parse zone;
-
-        $iovipHost = $r['io']['src']['main'][0];
-        $zone->iovipHost = $iovipHost;
-        $accMain = $r['up']['acc']['main'][0];
-        array_push($zone->cdnUpHosts, $accMain);
-        if (isset($r['up']['acc']['backup'])) {
-            foreach ($r['up']['acc']['backup'] as $key => $value) {
-                array_push($zone->cdnUpHosts, $value);
-            }
-        }
-        $srcMain = $r['up']['src']['main'][0];
-        array_push($zone->srcUpHosts, $srcMain);
-        if (isset($r['up']['src']['backup'])) {
-            foreach ($r['up']['src']['backup'] as $key => $value) {
-                array_push($zone->srcUpHosts, $value);
-            }
-        }
-
-        //set specific hosts
-        if (strstr($zone->iovipHost, "z1") !== false) {
-            $zone->rsHost = "rs-z1.qiniu.com";
-            $zone->rsfHost = "rsf-z1.qiniu.com";
-            $zone->apiHost = "api-z1.qiniu.com";
-        } elseif (strstr($zone->iovipHost, "z2") !== false) {
-            $zone->rsHost = "rs-z2.qiniu.com";
-            $zone->rsfHost = "rsf-z2.qiniu.com";
-            $zone->apiHost = "api-z2.qiniu.com";
-        } elseif (strstr($zone->iovipHost, "na0") !== false) {
-            $zone->rsHost = "rs-na0.qiniu.com";
-            $zone->rsfHost = "rsf-na0.qiniu.com";
-            $zone->apiHost = "api-na0.qiniu.com";
-        } else {
-            $zone->rsHost = "rs.qiniu.com";
-            $zone->rsfHost = "rsf.qiniu.com";
-            $zone->apiHost = "api.qiniu.com";
-        }
-
-        return $zone;
+        return array($r, null);
     }
 }
