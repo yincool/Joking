@@ -13,7 +13,7 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
-    //��ţ�ϴ�
+    //七牛上传
     public function upload($filePath,$fileName,$part = ''){
         require_once app_path('Tools/Qiniu/autoload.php');
         $accessKey = config('qiniu.AccessKey');
@@ -21,6 +21,7 @@ class Controller extends BaseController
         $auth = new Auth($accessKey, $secretKey);
         $bucket = config('qiniu.bucket');
         $upToken = $auth->uploadToken($bucket);
+        // 初始化 UploadManager 对象并进行文件的上传。
         $uploadMgr = new UploadManager();
         $key = $part.$fileName;
         list($ret, $err) = $uploadMgr->putFile($upToken,$key,$filePath);
